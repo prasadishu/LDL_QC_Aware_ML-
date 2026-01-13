@@ -1,0 +1,9 @@
+from src.compare_models import compare_all_models
+from src.plots import plot_mae, plot_rmse, plot_r2
+
+results_df = compare_all_models(df)
+print(results_df)
+
+plot_mae(results_df)
+plot_rmse(results_df)
+plot_r2(results_df)
