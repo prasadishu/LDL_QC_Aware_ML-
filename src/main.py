@@ -5,14 +5,30 @@ from src.models import catboost_model
 from src.train import split_data
 from src.evaluate import evaluate
 
-df = preprocess(load_data("data/LDL-C.xlsx"))
-X_train, X_test, y_train, y_test = split_data(df)
+# Load data
+df = load_data("../examples/example_input.csv")
 
-model = catboost_model()
-model.fit(X_train, y_train)
+X = preprocess(df)
+y = df["LDL_direct"]
 
-qc_scores = generate_qc_scores(len(y_test))
-preds = model.predict(X_test)
-preds_qc = apply_qc(preds, qc_scores)
+# Train model
+model = get_model()
+model = train_model(model, X, y)
 
-print(evaluate(y_test, preds_qc))
+# Predict
+predicted = model.predict(X)
+
+# QC setup
+qc = WestgardQC(mean=y.mean(), sd=y.std())
+
+final_results = []
+
+for val in predicted:
+    status = apply_qc(val, qc)
+    if status == "FAIL":
+        val = conservative_adjustment(val, y.mean())
+    final_results.append(val)
+
+# Evaluation
+metrics = evaluate(y, final_results)
+print(metrics)
