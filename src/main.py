@@ -19,15 +19,21 @@ model = train_model(model, X, y)
 predicted = model.predict(X)
 
 # QC setup
-qc = WestgardQC(mean=y.mean(), sd=y.std())
+from qc_module import WestgardQC, apply_qc, conservative_adjustment
 
-final_results = []
+qc_engine = WestgardQC(mean=y.mean(), sd=y.std())
 
-for val in predicted:
-    status = apply_qc(val, qc)
-    if status == "FAIL":
-        val = conservative_adjustment(val, y.mean())
-    final_results.append(val)
+history = []
+final_predictions = []
+
+for value in predicted:
+    qc_result = apply_qc(value, history, qc_engine)
+
+    if qc_result["qc_status"] == "FAIL":
+        value = conservative_adjustment(value, y.mean())
+
+    final_predictions.append(value)
+    history.append(value)
 
 # Evaluation
 metrics = evaluate(y, final_results)
